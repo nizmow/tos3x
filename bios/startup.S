@@ -1706,6 +1706,9 @@ resDelayL:  cmp.l     (_hz_200).w,d0            /* a short delay of 15-20ms */
 
 biosinit:
 		jsr       _osinit            /* initialize DOS */
+#if MONSTER
+        jsr       _monster_init      /* register alternate RAM before disk boot */
+#endif
 
 #else
 

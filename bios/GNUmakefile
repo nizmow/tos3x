@@ -43,6 +43,7 @@ tosvars.o: $(top_srcdir)/common/tosvars.S $(top_srcdir)/common/config.h
 	$(AM_V_AS)$(AS) $(ASFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 keytbl.o: $(top_srcdir)/common/config.h
+monster.o: monster.S $(top_srcdir)/common/config.h
 
 hadxbios.o: hadxbios.S $(FPSP060)
 m64_isa.o: m64_isa.S m64_pci.S

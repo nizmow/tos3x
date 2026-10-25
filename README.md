@@ -147,6 +147,11 @@ BIOS, VDI, GEMDOS, AES, DESKTOP: 2.06, 2.08, 3.06
 
 # How to compile
 
+For a verified Linux/Podman TOS 2.06 build, Hatari smoke test, and the current
+GCC compatibility findings, see [Building TOS 2.06 for an ST](doc/build-tos206.md).
+For automatic MonSTer alternate RAM initialization, see
+[MonSTer support](doc/monster.md).
+
 First off to clarify: the goal of this project was to actually be able to
 regenerate the original ROM images. Most parts of the sources used herein were
 already available before, but scattered around in several archives, and most

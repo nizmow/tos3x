@@ -4,6 +4,10 @@ BIOS_206_OBJS=startup.o nvram.o ikbdclk.o chardev.o floppy.o keytbl.o sounds.o p
 
 BIOS_OBJS=$(BIOS_$(TOSVERSION)_OBJS)
 
+ifeq ($(MONSTER),1)
+BIOS_206_OBJS += monster.o
+endif
+
 BIOS_HEADERS=\
 	bios.h \
 	biosdefs.h \
@@ -28,6 +32,7 @@ BIOS_INCLUDES=\
 	${empty}
 
 BIOS_ASRCS = \
+	monster.S \
 	startup.S \
 	nvram.S \
 	ikbdclk.S \
