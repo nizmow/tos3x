@@ -31,6 +31,12 @@ COUNTRY=de
 #
 BINEXACT=1
 
+# Enable automatic MonSTer alternate RAM on TOS 2.06 (requires BINEXACT=0).
+# Limit this if another expansion occupies part of $400000-$BFFFFF.
+# Mega STE builds automatically cap the selected size at 6 MiB.
+MONSTER=0
+MONSTER_RAM_MB=8
+
 #
 # Set this to 1 to build a RAM version relocated to 0x380000.
 # Only the PL version uses this so far.
@@ -56,6 +62,24 @@ MEDUSA=0
 
 -include $(top_srcdir)/localcnf.mak
 
+ifneq ($(filter $(MONSTER),0 1),$(MONSTER))
+$(error MONSTER must be 0 or 1)
+endif
+ifeq ($(MONSTER),1)
+ifneq ($(TOSVERSION),206)
+$(error MONSTER=1 requires TOSVERSION=206)
+endif
+ifneq ($(BINEXACT),0)
+$(error MONSTER=1 requires BINEXACT=0)
+endif
+ifneq ($(RAMVERSION)$(HADES)$(MEDUSA),000)
+$(error MONSTER=1 requires a standard ROM build: RAMVERSION=0 HADES=0 MEDUSA=0)
+endif
+ifeq ($(filter $(MONSTER_RAM_MB),2 4 6 8),)
+$(error MONSTER_RAM_MB must be 2, 4, 6, or 8)
+endif
+endif
+
 #
 # Rules to recreate some files from definitions above
 #
@@ -75,6 +99,8 @@ $(top_srcdir)/common/config.h: $(top_srcdir)/config.mak ${MAKEFILE}
 	$(AM_V_at)echo '#define HADES $(HADES)' >> $@
 	$(AM_V_at)echo '#define HADES_XBIOS $$$(HADES_XBIOS)' >> $@
 	$(AM_V_at)echo '#define MEDUSA $(MEDUSA)' >> $@
+	$(AM_V_at)echo '#define MONSTER $(MONSTER)' >> $@
+	$(AM_V_at)echo '#define MONSTER_RAM_MB $(MONSTER_RAM_MB)' >> $@
 	$(AM_V_at)echo '#define CT2 0' >> $@
 	$(AM_V_at)echo '#include "ctrycode.h"' >> $@
 	$(AM_V_at)echo '#if !BINEXACT' >> $@
