@@ -1,0 +1,28 @@
+[tools]
+python = '3.13'
+
+[tasks.doctor]
+description = "Check ROM build prerequisites"
+run = "python tools/build_rom.py doctor"
+
+[tasks.patches]
+description = "List available ROM patches"
+run = "python tools/build_rom.py patches"
+
+[tasks.build]
+description = "Build a TOS ROM (arguments pass through to build_rom.py)"
+run = "python tools/build_rom.py build"
+
+[tasks.deps]
+description = "Install Linux build prerequisites with apt (explicit opt-in)"
+run = "sudo apt-get update && sudo apt-get install -y python3 git build-essential bc dc"
+
+[tasks.run]
+description = "Run a built ROM in Hatari"
+usage = '''
+arg "<rom>" help="Path to the full ROM image"
+flag "--machine <machine>" help="Hatari machine type" default="megaste" {
+  choices "st" "megast" "ste" "megaste" "tt" "falcon"
+}
+'''
+run = 'hatari --machine "$usage_machine" --tos "$usage_rom"'

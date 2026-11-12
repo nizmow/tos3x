@@ -321,11 +321,11 @@ __sbss:	ds.b 0 /* end of "base" BSS; start of the BSS area that is zeroed by BIO
 	INT(_prtbink)
 
 #if STBOOK
-	V(_ofdbuf,b,70*80)
+	V(_ofdbuf,b,70*FOLDER_POOL_BLOCKS)
 	LONG(_ldivr)
 #else
 	LONG(_ldivr)
-	V(_ofdbuf,b,70*80)
+	V(_ofdbuf,b,70*FOLDER_POOL_BLOCKS)
 #endif
 
 	V(_bpbsums,w,BPBSECT*NUMFLOPPIES)
