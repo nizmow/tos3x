@@ -185,6 +185,12 @@ it yourself:
   If you pass the configuration via commandline, be sure to always
   use the same command when having to restart make.
 
+- For patched Alcyon builds, use `BINEXACT=0` and put overrides in
+  `common/localcnf.h`. Startup reserves and clears through link68's `_end`,
+  including module-local BSS and common storage beyond `common/vars.S`.
+  Check the linked OS memory boundary with:
+  `python3 test/check_os_memory.py glue/tos.img`.
+
 - There might currently be some issues with \ vs / in pathnames. If
   that is the case, try to run it using some emulator. Hatari
   (https://www.hatari-emu.org/) is reported to work.

@@ -213,7 +213,7 @@ nomemchk:
 #if (TOSVERSION >= 0x300)
                 lea (SUPSIZ*2+_supstk).l,a7     /* stack startup */
                 lea _has_dmasound.w,a0
-                lea __ebss,a1
+                lea BIOS_BSS_END,a1
                 moveq #0,d0
 clrbss:
                 move.w     d0,(a0)+
@@ -273,7 +273,7 @@ nostedetect:
                 /* ((__ebss-__sbss+15)/16)-1 */
                 move.w #$c2a,d1                 /* a04-ccb4 loeschen */
 #else
-                move.l #__ebss+15,d1
+                move.l #BIOS_BSS_END+15,d1
                 sub.l  #__sbss,d1
                 lsr.l  #4,d1
                 subq.w #1,d1
