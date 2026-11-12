@@ -196,7 +196,7 @@ nomemchk:
 /* clear the remainder of the BSS section */
 
         lea       (_has_dmasound).w,a0
-        lea       __ebss,a1
+        lea       BIOS_BSS_END,a1
 clrbss:
         clr.w     (a0)+
         cmpa.l    a0,a1

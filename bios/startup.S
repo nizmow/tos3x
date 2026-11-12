@@ -24,6 +24,18 @@ GEM_MUPB_MAGIC equ $87654321
 #define RR_MAGIC    $12123456
 #define RR_CHKSUM   $5678
 
+/* link68 appends module statics and commons after the vars.S template. */
+#ifndef __GNUC__
+#if !BINEXACT
+#define BIOS_BSS_END _end
+#define GEM_BSS_END _end
+#endif
+#endif
+#ifndef BIOS_BSS_END
+#define BIOS_BSS_END __ebss
+#define GEM_BSS_END _endgembss
+#endif
+
 nlevels  equ 5
 save_siz equ nlevels*46+8
 
@@ -42,8 +54,8 @@ save_siz equ nlevels*46+8
 /*       xref __etext       / * end of text section */
 /*       xref __edata       / * end of data section */
         xref _endvdibss    /* end of VDI BSS */
-        xref _endgembss    /* end of GEM BSS */
-        xref __ebss        /* end of BSS */
+        xref GEM_BSS_END   /* end of GEM BSS, including module storage */
+        xref BIOS_BSS_END  /* end of BSS to clear */
 
 		xref _supstk
 
@@ -164,7 +176,7 @@ os_dummy:
         data
 _ui_mupb:
         dc.l GEM_MUPB_MAGIC
-        dc.l _endgembss
+        dc.l GEM_BSS_END
         dc.l gemstart
 
 		text
@@ -1006,7 +1018,7 @@ nostec:
 
 /* clear the remainder of the BSS section */
 
-        movea.l   #__ebss,a1
+        movea.l   #BIOS_BSS_END,a1
         movea.l   #__sbss,a0
         moveq.l   #0,d0
 clrbss:
