@@ -145,6 +145,77 @@ BIOS, VDI, GEMDOS, AES, DESKTOP: 2.06, 2.08, 3.06
 - cz - Czech (originally was a patched german version)
 
 
+## Linux / WSL x86_64 quickstart
+
+The `tools/build_rom.py` wrapper provides isolated builds on Linux x86_64 and
+WSL. The legacy raw `make` workflow below remains available on other hosts.
+Install [mise](https://mise.jdx.dev/), then from the repository root run:
+
+```sh
+mise trust
+mise install
+mise run doctor
+```
+
+`mise trust` approves this repository's mise configuration; `mise install`
+installs its pinned Python 3.13. Native build prerequisites (Git, GCC/make,
+`bc`, and `dc`) are OS packages rather than mise tools. Install them explicitly
+on Debian/Ubuntu with `mise run deps` (which uses apt and sudo), or with your
+distribution's package manager. Hatari is optional; on Debian/Ubuntu it can be
+installed separately with `sudo apt-get install hatari`.
+
+Build stock UK TOS 2.06:
+
+```sh
+mise run build -- --tos 206 --country uk
+```
+
+Build with an explicit patch combination:
+
+```sh
+mise run build -- --tos 206 --country uk --define TP_47=1 \
+  --define SHBUFSIZE=16384 --define FOLDER_POOL_BLOCKS=180
+```
+
+To use a profile, create a TOML file, for example:
+
+```toml
+tos = 206
+country = "uk"
+exact = false
+
+[defines]
+TP_47 = 1
+SHBUFSIZE = 16384
+FOLDER_POOL_BLOCKS = 180
+```
+
+Then build with `mise run build -- --profile path/to/profile.toml`. The
+profile's `[defines]` table maps directly to existing C macros. Without
+custom definitions, builds default to `exact=true`; custom definitions default
+to `exact=false`. Wrapper builds turn all optional numeric `TP_*` patches off
+unless explicitly enabled, unlike raw `make`, which uses the defaults in
+`common/patchdef.h`.
+
+The wrapper supports TOS 2.06, 2.08, and 3.06 where matching resources exist.
+For example, use `--tos 306 --country de` for the TT, or
+`--tos 208 --country us` for the ST-Book. ST-Book resources are supplied only
+for `us`, `de`, and `fr`; unsupported combinations fail before compilation.
+
+Each build uses a clean snapshot of tracked working-tree files, so untracked
+source files are not included: `git add` a new source file before building.
+Existing ignored `common/localcnf.h` is not used by wrapper builds. Artifacts
+are placed under `build/<name>/`: the country/version full ROM image (for
+example `tos206uk.img`), the linked `tos.img` image, high/low byte lanes,
+generated `localcnf.h`, `build.log`, and `manifest.json`. The wrapper also
+checks the linked OS memory boundary. To run a ROM, pass its path to the
+Hatari task: `mise run run -- build/tos206uk-stock/tos206uk.img`. The default
+machine is Mega STE; use `--machine tt` for a TOS 3.06 image.
+
+The wrapper's apt task is opt-in; builds do not install system dependencies
+automatically.
+
+
 # How to compile
 
 First off to clarify: the goal of this project was to actually be able to

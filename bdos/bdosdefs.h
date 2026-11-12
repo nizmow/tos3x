@@ -56,6 +56,11 @@
 /* for compatibility with older versions: size of root array */
 #define MAXQUICK 5
 
+/* Internal filesystem/memory pool; shared with the fixed BSS layout. */
+#ifndef FOLDER_POOL_BLOCKS
+#define FOLDER_POOL_BLOCKS 80
+#endif
+
 /*
  * support for filesystems with 1 fat only
  */

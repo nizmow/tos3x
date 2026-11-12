@@ -17,7 +17,7 @@ static MDBLOCK *getosm PROTO((NOTHING));
 
 
 
-MDBLOCK ofdbuf[80];
+MDBLOCK ofdbuf[FOLDER_POOL_BLOCKS];
 MDBLOCK *ofdlist;
 MDBLOCK *root[MAXQUICK];
 #define ofdfree root[4]
