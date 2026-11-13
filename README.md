@@ -215,6 +215,18 @@ machine is Mega STE; use `--machine tt` for a TOS 3.06 image.
 The wrapper's apt task is opt-in; builds do not install system dependencies
 automatically.
 
+An optional Hatari desktop regression check exercises file and folder
+Show Information on a UK TOS 2.06 build:
+
+```sh
+python3 test/check_show_information.py \
+  build/tos206uk-custom/tos206uk.img build/tos206uk-custom/tos.img \
+  --output build/show-information-check
+```
+
+It uses a disposable host-directory drive, verifies the displayed names,
+sizes and folder file count, and saves screenshots and emulator logs.
+
 
 # How to compile
 
