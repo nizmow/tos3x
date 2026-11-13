@@ -1,0 +1,11 @@
+# Working UK 2.06 baseline plus only AUTO stack and zero-length Mshrink fixes.
+tos = "206"
+country = "uk"
+exact = false
+
+[defines]
+FOLDER_POOL_BLOCKS = 180
+TP_47 = 1
+SHBUFSIZE = 16384
+TP_15 = 1
+TP_29 = 1

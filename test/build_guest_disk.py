@@ -47,31 +47,38 @@ an operating system: the installed TOS ROM runs the tests.
 """
 
 
-def build_guest(work, log):
+def build_guest(work, log, programs):
     tools = ROOT / "bin/linux"
-    for source in ("guest_start.s", "guest_regress.c", "guest_child.c"):
+    for source in ("guest_start.s", *programs.values()):
         shutil.copy2(ROOT / "test" / source, work / source)
     for library in ("gem.a", "libc.a"):
         shutil.copy2(ROOT / "lib" / library, work / library)
-    for source in ("guest_start.s", "guest_regress.c", "guest_child.c"):
+    for source in ("guest_start.s", *programs.values()):
         subprocess.run([str(tools / "cc68"), "-c", source], cwd=work,
                        stdout=log, stderr=subprocess.STDOUT, check=True, timeout=30)
-    for name, obj in (("REGRESS", "guest_regress.o"), ("CHILD", "guest_child.o")):
+    for name, source in programs.items():
         subprocess.run([str(tools / "link68"), "[sy,locals]",
-                        f"{name}.rel=guest_start.o,{obj},gem.a,libc.a"], cwd=work,
+                        f"{name}.rel=guest_start.o,{Path(source).stem}.o,gem.a,libc.a"], cwd=work,
                        stdout=log, stderr=subprocess.STDOUT, check=True, timeout=30)
         subprocess.run([str(tools / "relmod"), f"{name}.rel", f"{name}.PRG"], cwd=work,
                        stdout=log, stderr=subprocess.STDOUT, check=True, timeout=30)
 
 
-def make_floppy(work, image):
+def make_floppy(work, image, zero_shrink):
     image.write_bytes(bytes(720 * 1024))
     subprocess.run(["mformat", "-i", str(image), "-f", "720", "::"], check=True)
     tree = work / "drive"
     (tree / "AUTO").mkdir(parents=True)
     shutil.copy2(work / "REGRESS.PRG", tree / "AUTO/REGRESS.PRG")
     shutil.copy2(work / "CHILD.PRG", tree / "CHILD.PRG")
-    (tree / "README.TXT").write_bytes(DISK_README.replace("\n", "\r\n").encode("ascii"))
+    readme = DISK_README
+    if zero_shrink:
+        shutil.copy2(work / "ZERO.PRG", tree / "AUTO/ZERO.PRG")
+        readme += ("\nZERO-LENGTH MSHRINK PROBE ENABLED: requires TP_29.\n"
+                   "Do not run this variant on stock TOS on real hardware: the\n"
+                   "known bug corrupts memory lists. Also require ZERO.TXT to\n"
+                   "contain PASS zero-shrink followed by DONE.\n")
+    (tree / "README.TXT").write_bytes(readme.replace("\n", "\r\n").encode("ascii"))
     for outer in range(8):
         for inner in range(16):
             directory = tree / f"D{outer:02d}" / f"S{inner:02d}"
@@ -82,7 +89,7 @@ def make_floppy(work, image):
                     *[str(path) for path in sorted(tree.iterdir())], "::"], check=True)
 
 
-def build_disk(output):
+def build_disk(output, zero_shrink=False):
     if sys.platform != "linux" or platform.machine().lower() not in ("x86_64", "amd64"):
         raise ValueError("the bundled guest toolchain requires Linux x86_64")
     for command in ("mformat", "mcopy"):
@@ -94,20 +101,24 @@ def build_disk(output):
     output.mkdir(parents=True, exist_ok=True)
     manifest = output / "manifest.json"
     manifest.unlink(missing_ok=True)
+    programs = {"REGRESS": "guest_regress.c", "CHILD": "guest_child.c"}
+    if zero_shrink:
+        programs["ZERO"] = "guest_zero.c"
     with tempfile.TemporaryDirectory(prefix="tos-guest-build-") as tmp:
         work = Path(tmp)
         with (output / "build.log").open("w") as log:
-            build_guest(work, log)
-        for name in ("REGRESS.PRG", "CHILD.PRG"):
-            shutil.copy2(work / name, output / name)
+            build_guest(work, log, programs)
+        for name in programs:
+            shutil.copy2(work / f"{name}.PRG", output / f"{name}.PRG")
         image = output / "native-test.st"
-        make_floppy(work, image)
+        make_floppy(work, image, zero_shrink)
         data = {
             "built_image_sha256": hashlib.sha256(image.read_bytes()).hexdigest(),
             "image_bytes": image.stat().st_size,
             "geometry": {"tracks": 80, "sides": 2, "sectors_per_track": 9, "sector_bytes": 512},
-            "program_sha256": {name: hashlib.sha256((output / name).read_bytes()).hexdigest()
-                               for name in ("REGRESS.PRG", "CHILD.PRG")},
+            "zero_shrink_probe": zero_shrink,
+            "program_sha256": {f"{name}.PRG": hashlib.sha256((output / f"{name}.PRG").read_bytes()).hexdigest()
+                               for name in programs},
         }
         manifest.write_text(json.dumps(data, indent=2) + "\n")
         return image
@@ -117,10 +128,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "build/guest-disk",
                         help="artifact directory (default: build/guest-disk)")
+    parser.add_argument("--zero-shrink", action="store_true",
+                        help="Include the TP_29 probe (unsafe on stock TOS; default: off)")
     args = parser.parse_args()
     output = args.output.resolve()
+    if args.zero_shrink:
+        print("WARNING: zero-shrink probe requires TP_29; use disposable test media.", file=sys.stderr)
     try:
-        image = build_disk(output)
+        image = build_disk(output, zero_shrink=args.zero_shrink)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         parser.exit(1, f"{error}\nArtifacts: {output}\n")
     print(f"Built hardware test disk: {image}")
