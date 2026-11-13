@@ -197,19 +197,13 @@ to `exact=false`. Wrapper builds turn all optional numeric `TP_*` patches off
 unless explicitly enabled, unlike raw `make`, which uses the defaults in
 `common/patchdef.h`.
 
-The next minimal UK TOS 2.06 Mega STE candidate keeps the 180-block pool and
-16 KiB NEWDESK buffer, adding only `TP_15` (AUTO stack cleanup) and `TP_29`
-(zero-length Mshrink):
+Patch selection belongs in `--define` arguments or a user-supplied profile;
+the repository does not ship machine-specific patch presets.
 
-```sh
-mise run build -- --profile profiles/megaste-minimal-fixes.toml \
-  --output tos206uk-megaste-minimal-fixes
-```
-
-The full flash payload is `tos206uk.img` (256 KiB); the `-hi.bin` and
-`-lo.bin` files are 128 KiB upper/even-address and lower/odd-address byte
-lanes. Match the board/programmer's mapping; do not flash the linked
-`tos.img` debugger container. Keep a stock-ROM recovery option.
+Flash the full raw `tos<version><country>.img` payload, not the linked
+`tos.img` debugger container. The `-hi.bin` and `-lo.bin` files contain
+upper/even-address and lower/odd-address byte lanes respectively. Match the
+board/programmer's mapping and keep a stock-ROM recovery option.
 
 The wrapper supports TOS 2.06, 2.08, and 3.06 where matching resources exist.
 For example, use `--tos 306 --country de` for the TT, or
@@ -302,21 +296,20 @@ The console may clear on return to the desktop: inspect `A:\RESULT.TXT`.
 Success requires all three PASS lines and DONE. The image includes
 `README.TXT`; it contains no ROM and does not install anything.
 
-For the minimal-fixes candidate, targeted validation is:
+For builds selecting `TP_15` and `TP_29`, enable their optional regressions:
 
 ```sh
 python3 test/check_guest_gemdos.py \
-  build/tos206uk-megaste-minimal-fixes/tos206uk.img \
-  build/tos206uk-megaste-minimal-fixes/tos.img \
+  build/tos206uk-custom/tos206uk.img build/tos206uk-custom/tos.img \
   --zero-shrink --check-auto-stack --full-boot \
-  --output build/tos206uk-megaste-minimal-fixes/native-proof
+  --output build/guest-patch-check
 ```
 
 `--full-boot` disables Hatari TOS patches, fast boot and fast FDC. The
 optional zero-shrink child checks list integrity, live data and memory
-recovery; AUTO validation checks the captured GEMDOS call frame. To build
-its physical test disk, use `mise run guest-disk -- --zero-shrink --output
-build/minimal-fixes-disk` and also require `ZERO.TXT` to contain
+recovery; AUTO validation checks the captured GEMDOS call frame. Build the
+physical test disk with `mise run guest-disk -- --zero-shrink`.
+Also require `ZERO.TXT` to contain
 `PASS zero-shrink` and `DONE`.
 **Do not run this optional zero-shrink variant on stock TOS on real hardware:**
 the known bug can corrupt memory lists. The default disk omits that probe.
