@@ -120,8 +120,10 @@ class Desktop:
 
     def open_c(self):
         self.key(56, "keydown")
+        token = self.arm_desktop()
         self.key("c")
         self.key(56, "keyup")
+        self.desktop(token)
         self.wait(lambda: self.windows(self.dump()), "C: directory window")
 
     def windows(self, data):
@@ -215,22 +217,38 @@ class Desktop:
         self.click(*self.icon(name))
         self.wait(lambda: self.entries(self.dump()).get(name, (0, 0, 0))[2] & 1, f"selection of {name}")
 
+    def arm_desktop(self):
+        """Capture the next return to the desktop's main event loop."""
+        self.sequence += 1
+        marker = self.path / f"desktop-{self.sequence}.bin"
+        script = self.path / f"desktop-{self.sequence}.ini"
+        script.write_text(f"savebin {marker} 0 1\nc\n")
+        # q_write is called only at the top of actions(), after an operation
+        # and its directory/object-tree refresh, immediately before evnt_multi.
+        self.send(f"hatari-debug b PC = ${self.syms['_q_write']:x} :once :file {script}")
+        return marker
+
+    def desktop(self, token):
+        self.wait(lambda: token.exists() and token.stat().st_size == 1,
+                  "return to desktop event loop")
+
     def arm_dialog(self, label):
         self.sequence += 1
         capture = self.path / f"dialog-{self.sequence}.ini"
         ram = self.path / f"dialog-{self.sequence}.bin"
         tree = self.path / f"tree-{self.sequence}.bin"
         capture.write_text(
-            f'savebin {tree} "a7+4" 4\n'
             f"savebin {ram} 0 4194304\n"
-            f"screenshot {self.output / (self.label + '-' + label + '.png')}\nc\n"
+            f"screenshot {self.output / (self.label + '-' + label + '.png')}\n"
+            f'savebin {tree} "a7+4" 4\nc\n'
         )
         self.send(f"hatari-debug b PC = ${self.syms['_fm_do']:x} :once :file {capture}")
         return ram, tree
 
     def dialog(self, token):
         ram, tree = token
-        self.wait(lambda: ram.exists() and ram.stat().st_size == 4194304 and tree.exists(), "modal dialog")
+        self.wait(lambda: ram.exists() and ram.stat().st_size == 4194304
+                  and tree.exists() and tree.stat().st_size == 4, "modal dialog")
         return ram.read_bytes(), long_at(tree.read_bytes(), 0)
 
     def field(self, data, tree, index):
@@ -242,7 +260,7 @@ class Desktop:
         self.send(f"hatari-debug screenshot {path}")
         self.wait(path.exists, "screenshot")
 
-    def drag(self, source, target, move=False):
+    def drag(self, source, target, move=False, confirm=True):
         self.select(source)
         source_xy, target_xy = self.icon(source), self.icon(target)
         self.move_mouse(*source_xy)
@@ -267,7 +285,12 @@ class Desktop:
         expected = "MOVE" if move else "COPY"
         if expected not in title or "RENAME" in title:
             raise AssertionError(f"{self.label}: unexpected operation title {title!r}")
-        self.key(28)
+        if confirm:
+            token = self.arm_desktop()
+            self.key(28)
+            self.desktop(token)
+        else:
+            return data, tree
 
 
 def run(rom, syms, output, operations):
@@ -326,7 +349,9 @@ def run(rom, syms, output, operations):
                     token = ui.arm_dialog("confirm")
                     ui.key("d")
                     ui.dialog(token)
+                    ready = ui.arm_desktop()
                     ui.key(28)
+                    ui.desktop(ready)
                     ui.wait(lambda: not (drive / "SOURCE.TXT").exists(), "deleted file")
                 elif operation == "search":
                     token = ui.arm_dialog("query")

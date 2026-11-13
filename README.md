@@ -237,6 +237,22 @@ python3 test/check_desktop_operations.py \
 python3 test/check_bios_preprocess.py
 ```
 
+Additional data-loss regressions cover recursive folder copy/move/delete,
+overwrite with truncation, conflict cancellation, and rename collisions:
+
+```sh
+python3 test/check_desktop_folders.py \
+  build/tos206uk-custom/tos206uk.img build/tos206uk-custom/tos.img \
+  --output build/folder-operation-check
+python3 test/check_desktop_conflicts.py \
+  build/tos206uk-custom/tos206uk.img build/tos206uk-custom/tos.img \
+  --output build/file-conflict-check
+```
+
+These use the same disposable-drive setup. See the
+[prioritized test plan](doc/testing-plan.md) for assertions and the next
+tiers that need guest-program or disk-driver fixtures.
+
 See [the non-exact build review](doc/binexact-review.md) for classifications,
 the conditional inventory, observed results, and verification limits.
 

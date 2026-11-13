@@ -215,6 +215,14 @@ python3 test/check_desktop_operations.py \
 Use `--operation copy` (or another operation, repeatable) to diagnose a
 specific scenario without rerunning the others.
 
+Six further data-loss scenarios subsequently passed in
+`check_desktop_folders.py` and `check_desktop_conflicts.py`: recursive folder
+copy/move/delete, overwrite with truncation, conflict cancellation, and
+rename collision rejection. The original six scenarios also passed with
+the synchronized event-loop harness. See the
+[prioritized test plan](testing-plan.md) for exact assertions, commands,
+fixture dependencies and the remaining tiers.
+
 ## Remaining verification limits
 
 This is not a declaration that TOS or every custom configuration is bug-free.
@@ -222,7 +230,7 @@ The UI scenarios use Hatari's GEMDOS host-directory drive, not an ACSI disk
 image or HDDRIVER; they do not prove BIOS media-I/O behavior. Physical Mega STE
 hardware, printers/serial devices, alternate boards/CPUs, all resolutions,
 all countries and patch combinations were not exercised. Nor does this suite
-cover recursive folder copy/search, disk-full/write-error recovery, multiple
+cover recursive folder search, disk-full/write-error recovery, multiple
 selection permutations, or every dialog/menu entry method.
 
 GNU preprocessing is checked, not a complete GNU compiler/linker ROM build.
