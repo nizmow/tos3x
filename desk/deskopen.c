@@ -206,6 +206,10 @@ VOID sh_witem(NOTHING)
 
 	bfill(32, 0, dr);					/* set up drive table   */
 
+#if !BINEXACT
+	subtype = 0; /* quiet compiler */
+	dir2 = NULL; /* quiet compiler */
+#endif
 	if (x_type == DESKICON)
 	{
 		limit = background[0].ob_tail;
@@ -217,10 +221,6 @@ VOID sh_witem(NOTHING)
 		curri = 0;
 	}
 
-#if !BINEXACT
-	subtype = 0; /* quiet compiler */
-	dir2 = NULL; /* quiet compiler */
-#endif
 	while (cont)
 	{									/* desktop icon     */
 		if (x_type == DESKICON)
