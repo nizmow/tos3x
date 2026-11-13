@@ -250,8 +250,43 @@ python3 test/check_desktop_conflicts.py \
 ```
 
 These use the same disposable-drive setup. See the
-[prioritized test plan](doc/testing-plan.md) for assertions and the next
-tiers that need guest-program or disk-driver fixtures.
+[prioritized test plan](doc/testing-plan.md) for assertions, the native guest
+checks, and remaining pool-pressure and disk-driver coverage.
+
+A native GEMDOS guest check builds small PRGs and boots a generated FAT12
+floppy, without a host-directory drive or external disk driver. It checks
+memory allocation/shrink/recovery, repeated child execution, and native
+directory/file reads. Requires Hatari and mtools:
+
+```sh
+python3 test/check_guest_gemdos.py \
+  build/tos206uk-custom/tos206uk.img build/tos206uk-custom/tos.img \
+  --output build/native-guest-check
+```
+
+Run it separately on stock and custom ROMs with their matching linked images.
+The [test plan](doc/testing-plan.md#native-guest-probes) describes assertions,
+artifacts and limits; directory traversal alone does not prove pool capacity.
+
+To build only a self-contained disk for a real ST, without a ROM, symbols or
+Hatari:
+
+```sh
+mise run guest-disk
+```
+
+This produces `build/guest-disk/native-test.st`, a 720 KiB DD FAT12 image,
+plus the PRGs, build log and manifest. Override the destination with
+`mise run guest-disk -- --output build/st-test-disk`. Requires mtools.
+Mount the image as writable A: on a Gotek/FlashFloppy, or use an appropriate
+disk-imaging tool to write a dedicated DD floppy; copying the `.st` file
+onto a floppy as an ordinary file is not sufficient.
+
+Boot cleanly from A: with hard-disk boot disabled, or launch
+`A:\AUTO\REGRESS.PRG` manually. Keep the supplied child and fixtures in place.
+The console may clear on return to the desktop: inspect `A:\RESULT.TXT`.
+Success requires all three PASS lines and DONE. The image includes
+`README.TXT`; it contains no ROM and does not install anything.
 
 See [the non-exact build review](doc/binexact-review.md) for classifications,
 the conditional inventory, observed results, and verification limits.
