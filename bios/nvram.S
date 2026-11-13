@@ -313,7 +313,7 @@ checkRTC:
             move.l    ABSW(_buserror),d2
             movea.l   sp,a2
             move.l    #chkRTC2,ABSW(_buserror)
-#if (TOSVERSION >= 0x200)) | !BINEXACT
+#if (TOSVERSION >= 0x200) | !BINEXACT
             bset      #0,27(a0) /* select bank 1 */
 #else
             move.b    #9,27(a0) /* select bank 1 */
