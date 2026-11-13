@@ -227,6 +227,19 @@ python3 test/check_show_information.py \
 It uses a disposable host-directory drive, verifies the displayed names,
 sizes and folder file count, and saves screenshots and emulator logs.
 
+The broader disposable-drive desktop check covers copy, move, rename,
+delete, search, and saving/reloading the desktop configuration:
+
+```sh
+python3 test/check_desktop_operations.py \
+  build/tos206uk-custom/tos206uk.img build/tos206uk-custom/tos.img \
+  --output build/desktop-operation-check
+python3 test/check_bios_preprocess.py
+```
+
+See [the non-exact build review](doc/binexact-review.md) for classifications,
+the conditional inventory, observed results, and verification limits.
+
 
 # How to compile
 
