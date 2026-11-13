@@ -13,6 +13,10 @@ run = "python tools/build_rom.py patches"
 description = "Build a TOS ROM (arguments pass through to build_rom.py)"
 run = "python tools/build_rom.py build"
 
+[tasks.guest-disk]
+description = "Build a standalone 720 KiB ST test floppy (no ROM or emulator needed)"
+run = "python test/build_guest_disk.py"
+
 [tasks.deps]
 description = "Install Linux build prerequisites with apt (explicit opt-in)"
 run = "sudo apt-get update && sudo apt-get install -y python3 git build-essential bc dc"
