@@ -60,6 +60,20 @@ the workload goes through TOS's native GEMDOS filesystem. No disk driver or
 downloaded binary fixture is needed. Requirements: the existing Linux x86_64
 toolchain, Hatari and mtools (`apt install hatari mtools` if absent).
 
+For physical-machine use, `mise run guest-disk` invokes the shared build-only
+frontend `test/build_guest_disk.py`. It needs no ROM, symbols or Hatari.
+Default image: `build/guest-disk/native-test.st`; alternate artifact directory:
+`mise run guest-disk -- --output build/st-test-disk`. The image includes an
+AUTO-starting parent, child, all directory fixtures and `README.TXT`.
+Use dedicated writable A: media, boot cleanly, and inspect `RESULT.TXT` after
+returning to the desktop; console text may no longer be visible. On an
+existing hard-disk boot, manually launching `A:\AUTO\REGRESS.PRG` also works,
+but resident software becomes part of the tested configuration.
+
+The emulator runner imports the same builder; no duplicated compile or
+fixture-generation path is maintained. The build manifest hashes the pristine
+image and programs; booting it creates/updates RESULT.TXT and changes the image.
+
 The guest covers:
 
 - Eight allocation/free/shrink cycles with odd and larger-than-32-KiB blocks,
@@ -101,8 +115,12 @@ console screenshot, build/emulator/GEMDOS logs, raw pool capture and
 Hatari quits cleanly and flushes the image. A timeout or incomplete/failing
 report cannot produce a successful results manifest.
 
-Only TOS 2.06 is accepted; only the configuration above was exercised.
-Fast-forward/fast FDC are enabled: functional behavior, not floppy timing.
+The automated runner targets TOS 2.06 / Mega STE / 4 MiB, with fast-forward
+and fast FDC enabled. The mise-built image also passed all three checks on
+an emulated ST/68000 with 1 MiB RAM and fast FDC disabled, using the reviewed
+UK TOS 2.06 ROM. Its 720 KiB DD BPB geometry was checked. Real hardware,
+512 KiB configurations, other TOS versions and other resolutions remain
+unverified; this is not a physical floppy-timing certification.
 Uncovered: zero-length Mshrink (optional `TP_29`), child allocations left
 unfreed at exit, ALT-RAM, general native filesystem mutation/failure recovery
 beyond writing the report, and ACSI/hard-disk drivers. No ROM changes.

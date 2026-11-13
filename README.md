@@ -268,6 +268,26 @@ Run it separately on stock and custom ROMs with their matching linked images.
 The [test plan](doc/testing-plan.md#native-guest-probes) describes assertions,
 artifacts and limits; directory traversal alone does not prove pool capacity.
 
+To build only a self-contained disk for a real ST, without a ROM, symbols or
+Hatari:
+
+```sh
+mise run guest-disk
+```
+
+This produces `build/guest-disk/native-test.st`, a 720 KiB DD FAT12 image,
+plus the PRGs, build log and manifest. Override the destination with
+`mise run guest-disk -- --output build/st-test-disk`. Requires mtools.
+Mount the image as writable A: on a Gotek/FlashFloppy, or use an appropriate
+disk-imaging tool to write a dedicated DD floppy; copying the `.st` file
+onto a floppy as an ordinary file is not sufficient.
+
+Boot cleanly from A: with hard-disk boot disabled, or launch
+`A:\AUTO\REGRESS.PRG` manually. Keep the supplied child and fixtures in place.
+The console may clear on return to the desktop: inspect `A:\RESULT.TXT`.
+Success requires all three PASS lines and DONE. The image includes
+`README.TXT`; it contains no ROM and does not install anything.
+
 See [the non-exact build review](doc/binexact-review.md) for classifications,
 the conditional inventory, observed results, and verification limits.
 

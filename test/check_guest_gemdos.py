@@ -16,61 +16,22 @@ import struct
 import subprocess
 import tempfile
 
-from check_show_information import ROOT, symbols
+from build_guest_disk import build_disk
+from check_show_information import symbols
 
 EXPECTED = ["PASS memory", "PASS process", "PASS filesystem", "DONE"]
 
 
-def build_guest(work, log):
-    tools = ROOT / "bin/linux"
-    for source in ("guest_start.s", "guest_regress.c", "guest_child.c"):
-        shutil.copy2(ROOT / "test" / source, work / source)
-    for library in ("gem.a", "libc.a"):
-        shutil.copy2(ROOT / "lib" / library, work / library)
-    for source in ("guest_start.s", "guest_regress.c", "guest_child.c"):
-        subprocess.run([str(tools / "cc68"), "-c", source], cwd=work,
-                       stdout=log, stderr=subprocess.STDOUT, check=True, timeout=30)
-    for name, obj in (("REGRESS", "guest_regress.o"), ("CHILD", "guest_child.o")):
-        subprocess.run([str(tools / "link68"), "[sy,locals]",
-                        f"{name}.rel=guest_start.o,{obj},gem.a,libc.a"], cwd=work,
-                       stdout=log, stderr=subprocess.STDOUT, check=True, timeout=30)
-        subprocess.run([str(tools / "relmod"), f"{name}.rel", f"{name}.PRG"], cwd=work,
-                       stdout=log, stderr=subprocess.STDOUT, check=True, timeout=30)
-
-
-def make_floppy(work, image):
-    image.write_bytes(bytes(720 * 1024))
-    subprocess.run(["mformat", "-i", str(image), "-f", "720", "::"], check=True)
-    tree = work / "drive"
-    (tree / "AUTO").mkdir(parents=True)
-    shutil.copy2(work / "REGRESS.PRG", tree / "AUTO/REGRESS.PRG")
-    shutil.copy2(work / "CHILD.PRG", tree / "CHILD.PRG")
-    for outer in range(8):
-        for inner in range(16):
-            directory = tree / f"D{outer:02d}" / f"S{inner:02d}"
-            directory.mkdir(parents=True)
-            (directory / "DATA.BIN").write_bytes(
-                bytes((i + outer * 17 + inner * 3) & 255 for i in range(257)))
-    subprocess.run(["mcopy", "-s", "-i", str(image),
-                    *[str(path) for path in sorted(tree.iterdir())], "::"], check=True)
-
-
 def run(rom, linked_image, output, timeout):
-    for command in ("hatari", "mformat", "mcopy"):
-        if shutil.which(command) is None:
-            raise ValueError(f"missing {command}; install Hatari and mtools")
+    if shutil.which("hatari") is None:
+        raise ValueError("missing hatari; install Hatari to run emulator checks")
     syms = symbols(linked_image)
     pool_size = syms["_bpbsums"] - syms["_ofdbuf"]
     if pool_size <= 0 or pool_size % 70:
         raise ValueError("unsupported linked filesystem-pool layout")
+    image = build_disk(output)
     with tempfile.TemporaryDirectory(prefix="tos-guest-") as tmp:
         work = Path(tmp)
-        with (output / "build.log").open("w") as log:
-            build_guest(work, log)
-        for name in ("REGRESS.PRG", "CHILD.PRG"):
-            shutil.copy2(work / name, output / name)
-        image = output / "native-test.st"
-        make_floppy(work, image)
         marker = work / "desktop.bin"
         pool = output / "pool.bin"
         console = output / "guest-console.png"
