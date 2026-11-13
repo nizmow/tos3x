@@ -121,9 +121,41 @@ an emulated ST/68000 with 1 MiB RAM and fast FDC disabled, using the reviewed
 UK TOS 2.06 ROM. Its 720 KiB DD BPB geometry was checked. Real hardware,
 512 KiB configurations, other TOS versions and other resolutions remain
 unverified; this is not a physical floppy-timing certification.
-Uncovered: zero-length Mshrink (optional `TP_29`), child allocations left
-unfreed at exit, ALT-RAM, general native filesystem mutation/failure recovery
-beyond writing the report, and ACSI/hard-disk drivers. No ROM changes.
+The default disk still omits zero-length Mshrink. It remains untested for
+child allocations left unfreed at exit, ALT-RAM, general native filesystem
+mutation/failure recovery beyond report writes, and ACSI/hard-disk drivers.
+
+## Optional patch regression checks
+
+Select patches through build arguments or a user-supplied profile. The test
+options below verify existing patch implementations; they do not select ROM
+patches, modify ROM routines or require a machine-specific build preset.
+
+`check_guest_gemdos.py --check-auto-stack` captures the first AUTO Fsfirst
+call frame and basepage using read-only debugger snapshots. Its eight-byte
+WORD/LONG/WORD argument frame must end at the 256-byte basepage boundary,
+after the preceding twelve-byte Mshrink call has been cleaned up. A build
+without `TP_15` fails at offset 242 instead of 248; an enabled build passes.
+
+`--zero-shrink` builds an optional ZERO.PRG child and requires its native
+ZERO.TXT report as well as successful child exit. Sixteen iterations alternate
+zero-shrinking the allocated-list head and a non-head entry, preserving and
+freeing a live sibling allocation and checking recovery of the largest free
+block. This catches the dangling allocated-list link left by the unpatched
+direct freeit() call. An isolated unpatched control entered that zero-shrink
+path, exited 1 and failed to return to desktop; the enabled build passes.
+
+The parent invokes this optional child with its report closed and checks
+the return status, independent of AUTO directory ordering. The zero-shrink
+probe is deliberately excluded by default: do not run it on stock TOS on
+physical hardware. `mise run guest-disk -- --zero-shrink` produces a pristine
+disk containing the TP_29 probe. RESULT.TXT and ZERO.TXT must be generated
+by the machine being tested, not supplied as pre-filled success files.
+
+`--full-boot` disables Hatari TOS patches, fast boot, fast FDC and Timer-D
+patching. Use it with a matching ROM/linked image to test an unpatched cold
+boot rather than depending on emulator ROM modifications. This remains
+emulator verification, not a certification of physical ACSI/HDDRIVER behavior.
 
 ## Next tiers, not yet covered
 
@@ -148,5 +180,5 @@ beyond writing the report, and ACSI/hard-disk drivers. No ROM changes.
 
 None of the new host-directory cases validates ACSI transfers, physical
 media integrity, disk-full recovery, all selection combinations, or every
-resolution/country/patch configuration. No original TOS behavior was changed
-or optional ROM patch enabled by this test-only expansion.
+resolution/country/patch configuration. The test expansion changes no ROM
+routines; users explicitly select patches through build arguments.
