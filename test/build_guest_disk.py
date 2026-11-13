@@ -54,7 +54,8 @@ def build_guest(work, log, programs):
     for library in ("gem.a", "libc.a"):
         shutil.copy2(ROOT / "lib" / library, work / library)
     for source in ("guest_start.s", *programs.values()):
-        subprocess.run([str(tools / "cc68"), "-c", source], cwd=work,
+        flags = ["-DTEST_ZERO_SHRINK=1"] if source == "guest_regress.c" and "ZERO" in programs else []
+        subprocess.run([str(tools / "cc68"), *flags, "-c", source], cwd=work,
                        stdout=log, stderr=subprocess.STDOUT, check=True, timeout=30)
     for name, source in programs.items():
         subprocess.run([str(tools / "link68"), "[sy,locals]",
@@ -73,11 +74,12 @@ def make_floppy(work, image, zero_shrink):
     shutil.copy2(work / "CHILD.PRG", tree / "CHILD.PRG")
     readme = DISK_README
     if zero_shrink:
-        shutil.copy2(work / "ZERO.PRG", tree / "AUTO/ZERO.PRG")
+        shutil.copy2(work / "ZERO.PRG", tree / "ZERO.PRG")
         readme += ("\nZERO-LENGTH MSHRINK PROBE ENABLED: requires TP_29.\n"
                    "Do not run this variant on stock TOS on real hardware: the\n"
-                   "known bug corrupts memory lists. Also require ZERO.TXT to\n"
-                   "contain PASS zero-shrink followed by DONE.\n")
+                   "known bug corrupts memory lists. The parent runs ZERO.PRG\n"
+                   "as a checked child; also require ZERO.TXT to contain\n"
+                   "PASS zero-shrink followed by DONE.\n")
     (tree / "README.TXT").write_bytes(readme.replace("\n", "\r\n").encode("ascii"))
     for outer in range(8):
         for inner in range(16):

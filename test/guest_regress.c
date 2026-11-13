@@ -477,6 +477,9 @@ fs_run()
 
 main()
 {
+#ifdef TEST_ZERO_SHRINK
+	long zero_result;
+#endif
 	rep_fd = -1;
 	child_tail[0] = 0;
 	child_tail[1] = 0;
@@ -494,5 +497,14 @@ main()
 
 	say("DONE\r\n");
 	report_close();
+#ifdef TEST_ZERO_SHRINK
+	/* Keep the report closed across this child too. Propagate any failure,
+	 * including report close errors, rather than trusting AUTO file order.
+	 */
+	zero_result = gemdos(0x4b, 0, (long)"A:\\ZERO.PRG",
+	                     (long)child_tail, (long)child_env);
+	if (zero_result != 0L)
+		fail("zero-child", zero_result);
+#endif
 	gemdos(0x4c, 0);
 }
