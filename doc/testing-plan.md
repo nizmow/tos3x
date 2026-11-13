@@ -52,19 +52,72 @@ already been refreshed. Modal captures finish writing their screenshots
 before exposing the captured tree pointer to the caller. Only breakpoints
 and RAM reads are used: no guest code calls or RAM writes.
 
-## Next tiers, not included in this expansion
+## Native guest probes
 
-1. **Allocation and process lifecycle:** a small guest PRG can exercise
-   allocate/free/shrink, load/exit and repeat cycles. The assertions should
-   check preservation of live data, return values and eventual memory reuse,
-   not incidental allocation addresses. This needs a reproducible guest
-   executable fixture but no external disk driver.
-2. **Directory/pool and path stress:** exercise large entry counts, nested
-   traversal, recursive search and repeated operations that consume/release
-   directory state. Choose counts from a demonstrated limit or documented
-   patch contract, not an arbitrary large number. The expanded folder pool
-   is not proven merely by copying a small nested tree.
-3. **Real GEMDOS disk path:** generate a partitioned disposable disk image,
+`check_guest_gemdos.py` builds two PRGs with the bundled Alcyon tools and boots
+a generated 720 KiB FAT12 floppy. No Hatari host-directory drive is mounted:
+the workload goes through TOS's native GEMDOS filesystem. No disk driver or
+downloaded binary fixture is needed. Requirements: the existing Linux x86_64
+toolchain, Hatari and mtools (`apt install hatari mtools` if absent).
+
+The guest covers:
+
+- Eight allocation/free/shrink cycles with odd and larger-than-32-KiB blocks,
+  deterministic byte patterns, survivor checks and positive-length shrinking.
+  The largest free block must recover to its warmed-up value after each cycle.
+- One warm-up and sixteen child launches. Each child allocates, checks and
+  frees a block, then returns 37. Parent data must survive and the largest
+  free block must recover after every launch.
+- Three forward/reverse traversals of 128 leaf directories. Each file must
+  yield exactly 257 expected bytes, then EOF; file calls and paths are checked.
+
+The minimal assembly startup moves the stack inside its own BSS before
+shrinking the initial TPA. It retains through link68 `_end`, including all
+linked BSS/commons, not just its own stack. GEMDOS calls use explicit word/long
+argument widths. The report is closed during child execution, then reopened
+for append.
+
+Run the same workload on stock and custom ROMs, each with its matching
+Alcyon linked image:
+
+```sh
+python3 test/check_guest_gemdos.py \
+  build/tos206uk-reviewed-stock/tos206uk.img build/tos206uk-reviewed-stock/tos.img \
+  --output build/native-guest-stock
+python3 test/check_guest_gemdos.py \
+  build/tos206uk-reviewed/tos206uk.img build/tos206uk-reviewed/tos.img \
+  --output build/native-guest-custom
+```
+
+Both passed on UK TOS 2.06, Mega STE, 4 MiB RAM, monochrome. The guest PRG
+hashes match. Post-run pool captures identify 80 blocks in stock and 180 in
+the reviewed custom build, each with one unused block at desktop entry.
+These are post-run observations, **not** peak usage or proof of the expanded
+pool's capacity boundary.
+
+Artifacts: both PRGs, fixture image `native-test.st`, `guest-result.txt`,
+console screenshot, build/emulator/GEMDOS logs, raw pool capture and
+`results.json` with input hashes. The report is read from FAT only after
+Hatari quits cleanly and flushes the image. A timeout or incomplete/failing
+report cannot produce a successful results manifest.
+
+Only TOS 2.06 is accepted; only the configuration above was exercised.
+Fast-forward/fast FDC are enabled: functional behavior, not floppy timing.
+Uncovered: zero-length Mshrink (optional `TP_29`), child allocations left
+unfreed at exit, ALT-RAM, general native filesystem mutation/failure recovery
+beyond writing the report, and ACSI/hard-disk drivers. No ROM changes.
+
+## Next tiers, not yet covered
+
+1. **Pool capacity boundary:** native traversal now exercises real GEMDOS
+   state, but needs high-water/reclamation diagnostics and a source-informed
+   workload/control to establish the expanded pool's benefit. Directory
+   counts and post-run block counts do not prove that.
+2. **Native filesystem mutations and failures:** bulk create/write,
+   overwrite/rename/delete, fragmentation, disk-full and write-error recovery
+   on disposable FAT images. Writing the native result file does not cover
+   these operations and their failure paths.
+3. **Driver-backed hard-disk path:** generate a partitioned disposable image,
    boot it with an identified, redistributable driver, and repeat basic
    create/read/write/rename/delete plus disk-full recovery. Record the driver
    version/checksum and partition geometry. This is the first tier with a

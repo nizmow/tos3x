@@ -250,8 +250,23 @@ python3 test/check_desktop_conflicts.py \
 ```
 
 These use the same disposable-drive setup. See the
-[prioritized test plan](doc/testing-plan.md) for assertions and the next
-tiers that need guest-program or disk-driver fixtures.
+[prioritized test plan](doc/testing-plan.md) for assertions, the native guest
+checks, and remaining pool-pressure and disk-driver coverage.
+
+A native GEMDOS guest check builds small PRGs and boots a generated FAT12
+floppy, without a host-directory drive or external disk driver. It checks
+memory allocation/shrink/recovery, repeated child execution, and native
+directory/file reads. Requires Hatari and mtools:
+
+```sh
+python3 test/check_guest_gemdos.py \
+  build/tos206uk-custom/tos206uk.img build/tos206uk-custom/tos.img \
+  --output build/native-guest-check
+```
+
+Run it separately on stock and custom ROMs with their matching linked images.
+The [test plan](doc/testing-plan.md#native-guest-probes) describes assertions,
+artifacts and limits; directory traversal alone does not prove pool capacity.
 
 See [the non-exact build review](doc/binexact-review.md) for classifications,
 the conditional inventory, observed results, and verification limits.
